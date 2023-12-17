@@ -12,6 +12,17 @@ namespace AdventOfCode2023.Helpers
         Down
     }
 
+    public static class Directions
+    {
+        public static readonly Direction[] All = new Direction[]
+        {
+            Direction.Right,
+            Direction.Up,
+            Direction.Left,
+            Direction.Down
+        };
+    }
+
     public struct DoublePoint
     {
         public double Y { get; }

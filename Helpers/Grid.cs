@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AdventOfCode2023.Solvers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -85,6 +86,23 @@ namespace AdventOfCode2023.Helpers
                 }
             }
         }
+        public Grid(string grid, Func<char, int, int, T> transform)
+        {
+            var splitContent = grid.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            YMax = splitContent.Length;
+            XMax = splitContent[0].Length;
+
+            _innerGrid = new T[YMax, XMax];
+
+            for (int y = 0; y < YMax; y++)
+            {
+                for (int x = 0; x < XMax; x++)
+                {
+                    _innerGrid[y, x] = transform(splitContent[y][x], x, y);
+                }
+            }
+        }
         public Grid(string grid, Func<char, T> transform, T completeWith)
         {
             var splitContent = grid.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -114,6 +132,23 @@ namespace AdventOfCode2023.Helpers
             this._innerGrid = grid;
         }
 
+        public Grid(IList<IList<T>> newGrid)
+        {
+            YMax = newGrid.Count;
+            XMax = newGrid[0].Count;
+
+            _innerGrid = new T[YMax, XMax];
+
+            for (int y = 0; y < YMax; y++)
+            {
+                var line = newGrid[y];
+                for (int x = 0; x < XMax; x++)
+                {
+                    _innerGrid[y, x] = line[x];
+                }
+            }
+        }
+
         public IEnumerable<Cell<T>> All()
         {
             for (int y = 0; y < YMax; y++)
@@ -124,6 +159,40 @@ namespace AdventOfCode2023.Helpers
                 }
             }
         }
+        public IEnumerable<Cell<T>> GetRow(int y)
+        {
+            if (y >= 0 && y < YMax)
+            {
+                for (int x = 0; x < XMax; x++)
+                {
+                    yield return this[y, x];
+                }
+            }
+        }
+        public IEnumerable<T> GetRowValues(int y)
+        {
+            foreach (var cell in GetRow(y))
+                yield return cell.Value;
+        }
+
+        public IEnumerable<Cell<T>> GetColumn(int x)
+        {
+            if (x >= 0 && x < XMax)
+            {
+                for (int y = 0; y < YMax; y++)
+                {
+                    yield return this[y, x];
+                }
+            }
+        }
+        public IEnumerable<T> GetColumnValues(int x)
+        {
+            foreach (var cell in GetColumn(x))
+                yield return cell.Value;
+        }
+
+
+
         internal int Count(Func<Cell<T>, bool> countPredicate) => All().Count(countPredicate);
         internal int Count(Func<T, bool> countPredicate) => All().Count(c => countPredicate(c.Value));
 
@@ -132,7 +201,7 @@ namespace AdventOfCode2023.Helpers
             switch (d)
             {
                 case Direction.Right:
-                    var newX = cell.X + 1; 
+                    var newX = cell.X + 1;
                     if (newX > XMax - 1)
                     {
                         if (!wrap)
@@ -141,7 +210,7 @@ namespace AdventOfCode2023.Helpers
                     }
                     return this[cell.Y, newX];
                 case Direction.Left:
-                    newX = cell.X -1;
+                    newX = cell.X - 1;
                     if (newX < 0)
                     {
                         if (!wrap)
@@ -160,7 +229,7 @@ namespace AdventOfCode2023.Helpers
                     return this[newY, cell.X];
                 case Direction.Down:
                     newY = cell.Y + 1;
-                    if (newY > YMax -1)
+                    if (newY > YMax - 1)
                     {
                         if (!wrap)
                             return defaultCtor == null ? null : defaultCtor(cell.X, newY);
@@ -202,7 +271,7 @@ namespace AdventOfCode2023.Helpers
             }
         }
 
-        public IEnumerable<Cell<T>> GetFirstInEachDirection(int y, int x, Predicate<T> condition, Func<int, int ,Cell<T>> defaultCtor = null, bool noDiagonal = false)
+        public IEnumerable<Cell<T>> GetFirstInEachDirection(int y, int x, Predicate<T> condition, Func<int, int, Cell<T>> defaultCtor = null, bool noDiagonal = false)
         {
             for (int dy = -1; dy <= 1; dy++)
                 for (int dx = -1; dx <= 1; dx++)
@@ -234,7 +303,7 @@ namespace AdventOfCode2023.Helpers
                 x += dx;
 
                 if (!wrap && (y < 0 || x < 0 || y > YMax - 1 || x > XMax - 1))
-                    return defaultCtor == null ? null : defaultCtor(x,y);
+                    return defaultCtor == null ? null : defaultCtor(x, y);
                 if (wrap)
                 {
                     if (y < 0) y = YMax - 1;
@@ -242,7 +311,7 @@ namespace AdventOfCode2023.Helpers
                     if (y > YMax - 1) y = 0;
                     if (x > XMax - 1) x = 0;
 
-                    if (y ==  startY && x == startX)
+                    if (y == startY && x == startX)
                         return defaultCtor == null ? null : defaultCtor(x, y);
                 }
 
@@ -256,9 +325,9 @@ namespace AdventOfCode2023.Helpers
             for (int y = 0; y < YMax; y++)
             {
                 if (reverseOrder)
-                    for (int x = XMax -1; x >= 0; x--)
+                    for (int x = XMax - 1; x >= 0; x--)
                         action(this[y, x]);
-                else 
+                else
                     for (int x = 0; x < XMax; x++)
                         action(this[y, x]);
             }
@@ -276,7 +345,11 @@ namespace AdventOfCode2023.Helpers
             }
         }
 
-        public Cell<T> this[int y, int x] => new Cell<T>(y, x, _innerGrid[y, x]);
+        public Cell<T> this[int y, int x]
+        {
+            get { return new Cell<T>(y, x, _innerGrid[y, x]); }
+            set { Set(y, x, value.Value); }
+        }
 
         public void Set(int y, int x, T value) => _innerGrid[y, x] = value;
 
@@ -302,6 +375,23 @@ namespace AdventOfCode2023.Helpers
                     printElement(this[y, x]);
                 }
                 Console.WriteLine();
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+        public void Print(Action<Cell<T>> printElement, Predicate<Cell<T>> anyInLineToKeepReturn)
+        {
+            for (int y = 0; y < YMax; y++)
+            {
+                bool skipLine = false;
+                for (int x = 0; x < XMax; x++)
+                {
+                    printElement(this[y, x]);
+                    if (!skipLine)
+                        skipLine = anyInLineToKeepReturn(this[y, x]);
+                }
+                if (!skipLine)
+                    Console.WriteLine();
             }
             Console.WriteLine();
             Console.WriteLine();

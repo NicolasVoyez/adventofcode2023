@@ -52,17 +52,25 @@ static bool TrySolveExercice(int num)
         var input = File.ReadAllText(path);
         ISolver solver = (ISolver)Assembly.GetAssembly(typeof(ISolver))?.GetType($"AdventOfCode2023.Solvers.SolverDay{num}")
             ?.GetConstructor(new Type[0])?.Invoke(new object[0]);
-        ISolver testSolver = (ISolver)Assembly.GetAssembly(typeof(ISolver))?.GetType($"AdventOfCode2023.Solvers.SolverDay{num}")
-            ?.GetConstructor(new Type[0])?.Invoke(new object[0]);
         if (solver != null)
         {
 
             var testpath = $"./InputsTest/Input{num}.txt";
+            var part1Path = $"./InputsTest/Input{num}.part1.txt";
             string testInput = string.Empty;
+            bool differentSetForPart2 = false;
+            ISolver testSolver = (ISolver)Assembly.GetAssembly(typeof(ISolver))?.GetType($"AdventOfCode2023.Solvers.SolverDay{num}")
+                ?.GetConstructor(new Type[0])?.Invoke(new object[0]);
             if (File.Exists(testpath))
             {
                 testInput = File.ReadAllText(testpath);
                 testSolver.InitInput(testInput);
+            }
+            else if (File.Exists(part1Path))
+            {
+                testInput = File.ReadAllText(part1Path);
+                testSolver.InitInput(testInput);
+                differentSetForPart2 = true;
             }
 
             if (!solver.TestOnly)
@@ -82,17 +90,26 @@ static bool TrySolveExercice(int num)
             {
                 ex1 = solver.SolveFirstProblem();
                 Console.WriteLine("Answer to exercice 1 is : " + ex1 + " ... (answer found in " + sw.ElapsedMilliseconds + " ms).");
-                sw = Stopwatch.StartNew();
             }
             if (solver.Question2CodeIsDone)
             {
+                if (differentSetForPart2)
+                {
+                    var part2Path = $"./InputsTest/Input{num}.part2.txt";
+                    string test2Input = string.Empty;
+                    testSolver = (ISolver)Assembly.GetAssembly(typeof(ISolver))?.GetType($"AdventOfCode2023.Solvers.SolverDay{num}")?.GetConstructor(new Type[0])?.Invoke(new object[0]);
+                    testInput = File.ReadAllText(part2Path);
+                    testSolver.InitInput(testInput);
+                }
+                sw = Stopwatch.StartNew();
+                if (!string.IsNullOrEmpty(testInput))
+                    Console.WriteLine("Test Answer to exercice 2 is : " + testSolver.SolveSecondProblem(testAnswerEx1));
+                sw = Stopwatch.StartNew();
                 string q2Result = null;
                 if (!solver.TestOnly)
                 {
                     q2Result = "Answer to exercice 2 is : " + solver.SolveSecondProblem(ex1) + " ... (answer found in " + sw.ElapsedMilliseconds + " ms).";
                 }
-                if (!string.IsNullOrEmpty(testInput))
-                    Console.WriteLine("Test Answer to exercice 2 is : " + testSolver.SolveSecondProblem(testAnswerEx1));
                 if (!string.IsNullOrEmpty(q2Result))
                     Console.WriteLine(q2Result);
             }

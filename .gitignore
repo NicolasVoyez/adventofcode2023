@@ -1,4 +1,5 @@
 #AOC requirements
+/Inputs/*.txt
 */Inputs/*.txt
 
 # Visual Studio generated and user-specific files
